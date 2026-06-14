@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blitz Sort</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --surface3: #222222;
+    --border: rgba(255,255,255,0.08);
+    --border-hover: rgba(255,255,255,0.18);
+    --text: #f0f0f0;
+    --text-2: #888;
+    --text-3: #555;
+    --accent: #7c6fff;
+    --accent-dim: rgba(124,111,255,0.12);
+    --accent-dim2: rgba(124,111,255,0.22);
+    --green: #3ecf8e;
+    --green-dim: rgba(62,207,142,0.12);
+    --red: #f56565;
+    --red-dim: rgba(245,101,101,0.12);
+    --amber: #f6a623;
+    --amber-dim: rgba(246,166,35,0.12);
+    --radius: 12px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .container {
+    width: 100%;
+    max-width: 520px;
+    padding: 0 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* NAV */
+  nav {
+    width: 100%;
+    max-width: 520px;
+    padding: 24px 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+  .nav-badge {
+    font-size: 11px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid rgba(124,111,255,0.25);
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+
+  /* SCREENS */
+  .screen { display: none; flex: 1; flex-direction: column; padding: 32px 0 24px; }
+  .screen.active { display: flex; }
+
+  /* START SCREEN */
+  .hero-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(36px, 8vw, 52px);
+    font-weight: 700;
+    letter-spacing: -2px;
+    line-height: 1.05;
+    margin-bottom: 14px;
+  }
+  .hero-title em { color: var(--accent); font-style: normal; }
+  .hero-sub {
+    font-size: 15px;
+    color: var(--text-2);
+    line-height: 1.65;
+    margin-bottom: 36px;
+    max-width: 360px;
+  }
+  .mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .mode-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 18px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    text-align: left;
+  }
+  .mode-card:hover { border-color: var(--border-hover); background: var(--surface2); transform: translateY(-1px); }
+  .mode-card.selected { border-color: var(--accent); background: var(--accent-dim); }
+  .mode-card.daily-card { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; }
+  .mode-icon {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+  .daily-card .mode-icon { margin-bottom: 0; font-size: 26px; }
+  .mode-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+  .mode-desc { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+  .daily-info { flex: 1; }
+  .daily-date { font-size: 11px; color: var(--accent); margin-bottom: 2px; font-weight: 500; }
+
+  .diff-section { margin-bottom: 28px; }
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-3);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .diff-pills {
+    display: flex;
+    gap: 8px;
+  }
+  .diff-pill {
+    flex: 1;
+    padding: 10px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text-2);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .diff-pill:hover { border-color: var(--border-hover); color: var(--text); }
+  .diff-pill.selected { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+  .diff-pill .diff-sub { font-size: 10px; font-weight: 400; color: var(--text-3); display: block; margin-top: 2px; }
+  .diff-pill.selected .diff-sub { color: rgba(124,111,255,0.6); }
+
+  .play-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-lg);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.3px;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .play-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .play-btn:active { transform: scale(0.98); }
+
+  /* GAME SCREEN */
+  .game-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .game-round {
+    font-size: 12px;
+    color: var(--text-2);
+    font-weight: 500;
+  }
+  .diff-tag {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-weight: 500;
+  }
+  .diff-tag.easy { background: var(--green-dim); color: var(--green); }
+  .diff-tag.medium { background: var(--amber-dim); color: var(--amber); }
+  .diff-tag.hard { background: var(--red-dim); color: var(--red); }
+  .diff-tag.daily { background: var(--accent-dim); color: var(--accent); }
+
+  .hud {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .hud-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 8px;
+    text-align: center;
+  }
+  .hud-label { font-size: 10px; color: var(--text-3); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .hud-val { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 600; color: var(--text); }
+  .hud-val.accent { color: var(--accent); }
+  .hud-val.green { color: var(--green); }
+
+  .timer-wrap {
+    height: 3px;
+    background: var(--surface3);
+    border-radius: 2px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .timer-bar {
+    height: 3px;
+    border-radius: 2px;
+    transition: width 0.1s linear, background 0.3s;
+    background: var(--accent);
+  }
+
+  .word-stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 110px;
+    margin-bottom: 20px;
+  }
+  .word-chip {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(22px, 5vw, 32px);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border-hover);
+    border-radius: var(--radius-xl);
+    padding: 18px 36px;
+    cursor: grab;
+    user-select: none;
+    transition: transform 0.1s, border-color 0.2s, background 0.2s;
+    touch-action: none;
+  }
+  .word-chip:active { cursor: grabbing; transform: scale(1.06) rotate(-1deg); }
+  .word-chip.flash-correct { border-color: var(--green); background: var(--green-dim); color: var(--green); }
+  .word-chip.flash-wrong { border-color: var(--red); background: var(--red-dim); color: var(--red); }
+
+  .buckets {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .buckets.two-col { grid-template-columns: 1fr 1fr; }
+  .buckets.four-col { grid-template-columns: 1fr 1fr; }
+
+  .bucket {
+    border: 1.5px dashed var(--border-hover);
+    border-radius: var(--radius-lg);
+    padding: 18px 12px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: border-color 0.15s, background 0.15s;
+    min-height: 80px;
+  }
+  .bucket.drag-over { border-color: var(--accent); background: var(--accent-dim); border-style: solid; }
+  .bucket-icon { font-size: 18px; }
+  .bucket-label { font-size: 13px; font-weight: 500; color: var(--text-2); }
+  .bucket-count { font-size: 10px; color: var(--text-3); }
+
+  /* RESULT SCREEN */
+  .result-eyebrow {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-3);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .result-big {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(56px, 14vw, 80px);
+    font-weight: 700;
+    letter-spacing: -3px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .result-big.accent { color: var(--accent); }
+  .result-sub { font-size: 14px; color: var(--text-2); margin-bottom: 24px; }
+  .streak-dots {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--surface3);
+  }
+  .dot.ok { background: var(--green); }
+  .dot.bad { background: var(--red); }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 10px;
+    text-align: center;
+  }
+  .stat-val { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 600; color: var(--text); }
+  .stat-lbl { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+
+  .btn-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .btn-share {
+    flex: 1;
+    padding: 13px;
+    border: 1px solid var(--border-hover);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-share:hover { background: var(--surface2); border-color: rgba(255,255,255,0.25); }
+  .btn-share.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-share.primary:hover { opacity: 0.88; }
+  .btn-play-again {
+    width: 100%;
+    padding: 15px;
+    background: transparent;
+    border: 1px solid var(--border-hover);
+    border-radius: var(--radius-lg);
+    color: var(--text-2);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-play-again:hover { color: var(--text); border-color: rgba(255,255,255,0.3); }
+
+  .copied-toast {
+    font-size: 12px;
+    color: var(--green);
+    text-align: center;
+    margin-top: 8px;
+    height: 18px;
+  }
+  .daily-done-msg {
+    background: var(--accent-dim);
+    border: 1px solid rgba(124,111,255,0.2);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--accent);
+    text-align: center;
+    margin-bottom: 12px;
+    display: none;
+  }
+
+  /* FOOTER */
+  footer {
+    width: 100%;
+    max-width: 520px;
+    padding: 20px;
+    text-align: center;
+    border-top: 1px solid var(--border);
+    margin-top: auto;
+  }
+  footer p { font-size: 12px; color: var(--text-3); }
+  footer a { color: var(--text-2); text-decoration: none; transition: color 0.15s; }
+  footer a:hover { color: var(--accent); }
+
+  /* TOUCH CLONE */
+  .touch-clone {
+    position: fixed;
+    pointer-events: none;
+    opacity: 0.88;
+    z-index: 999;
+    transform: scale(1.06) rotate(-1deg);
+  }
+
+  @media (max-width: 400px) {
+    .hud { grid-template-columns: repeat(2,1fr); }
+    .word-chip { font-size: 20px; padding: 14px 24px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Blitz<span>Sort</span></div>
+  <div class="nav-badge" id="daily-nav-badge"></div>
+</nav>
+
+<div class="container">
+
+  <!-- START SCREEN -->
+  <div id="start-screen" class="screen active">
+    <h1 class="hero-title">Sort fast.<br><em>Beat your streak.</em></h1>
+    <p class="hero-sub">Drag words into the right category. Every wrong sort resets your streak. You have 60 seconds.</p>
+
+    <div class="section-label">Game mode</div>
+    <div class="mode-grid" style="margin-bottom:24px;">
+      <div class="mode-card selected" id="mode-classic" onclick="selectMode('classic')">
+        <div class="mode-icon">⚡</div>
+        <div class="mode-name">Classic</div>
+        <div class="mode-desc">Random categories, unlimited replays</div>
+      </div>
+      <div class="mode-card" id="mode-daily" onclick="selectMode('daily')">
+        <div class="mode-icon">📅</div>
+        <div class="mode-name">Daily</div>
+        <div class="mode-desc">One puzzle per day, same for everyone</div>
+      </div>
+    </div>
+
+    <div class="diff-section" id="diff-section">
+      <div class="section-label">Difficulty</div>
+      <div class="diff-pills">
+        <div class="diff-pill selected" id="diff-easy" onclick="selectDiff('easy')">
+          Easy
+          <span class="diff-sub">2 buckets · 60s</span>
+        </div>
+        <div class="diff-pill" id="diff-medium" onclick="selectDiff('medium')">
+          Medium
+          <span class="diff-sub">2 buckets · 45s</span>
+        </div>
+        <div class="diff-pill" id="diff-hard" onclick="selectDiff('hard')">
+          Hard
+          <span class="diff-sub">4 buckets · 30s</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="daily-played-msg" class="daily-done-msg">You already played today's Daily! Come back tomorrow.</div>
+
+    <button class="play-btn" id="play-btn" onclick="startGame()">Start game →</button>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="game-screen" class="screen">
+    <div class="game-header">
+      <div class="game-round" id="round-label">Animals vs Food</div>
+      <div class="diff-tag easy" id="diff-tag">Easy</div>
+    </div>
+    <div class="hud">
+      <div class="hud-card"><div class="hud-label">Time</div><div class="hud-val" id="timer-disp">60</div></div>
+      <div class="hud-card"><div class="hud-label">Best</div><div class="hud-val accent" id="best-streak">0</div></div>
+      <div class="hud-card"><div class="hud-label">Streak</div><div class="hud-val green" id="cur-streak">0</div></div>
+      <div class="hud-card"><div class="hud-label">Sorted</div><div class="hud-val" id="sorted-count">0</div></div>
+    </div>
+    <div class="timer-wrap"><div class="timer-bar" id="timer-bar" style="width:100%"></div></div>
+    <div class="word-stage" id="word-stage">
+      <div class="word-chip" id="word-chip" draggable="true">LOADING</div>
+    </div>
+    <div class="buckets two-col" id="buckets"></div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div id="result-screen" class="screen">
+    <div class="result-eyebrow" id="result-mode-label">Classic · Easy</div>
+    <div class="result-big accent" id="final-streak">0</div>
+    <div class="result-sub">best streak</div>
+    <div class="streak-dots" id="streak-dots"></div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-val" id="r-sorted">0</div><div class="stat-lbl">Sorted</div></div>
+      <div class="stat-card"><div class="stat-val" id="r-correct">0</div><div class="stat-lbl">Correct</div></div>
+      <div class="stat-card"><div class="stat-val" id="r-acc">0%</div><div class="stat-lbl">Accuracy</div></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-share primary" onclick="shareOnX()">Share on X ↗</button>
+      <button class="btn-share" onclick="copyResult()">Copy result</button>
+    </div>
+    <div class="copied-toast" id="copied-toast"></div>
+    <button class="btn-play-again" onclick="backToStart()">← Back to menu</button>
+  </div>
+
+</div>
+
+<footer>
+  <p>Developed by <a href="https://twitter.com/shubhamlashkan" target="_blank" rel="noopener">@shubhamlashkan</a></p>
+</footer>
+
+<script>
+const ROUNDS = [
+  {
+    cats: [
+      {label:"Animal", icon:"🐾", words:["LION","EAGLE","SHARK","FROG","COBRA","WOLF","PANDA","DEER","CROW","WHALE","TIGER","OWL","BEAR","SEAL","LYNX"]},
+      {label:"Food",   icon:"🍜", words:["PIZZA","MANGO","SUSHI","BREAD","PASTA","TACO","CURRY","SOUP","WAFFLE","DONUT","RAMEN","BRIE","STEAK","QUICHE","BAGEL"]}
+    ]
+  },
+  {
+    cats: [
+      {label:"Country", icon:"🌍", words:["BRAZIL","JAPAN","EGYPT","INDIA","ITALY","PERU","CHILE","GHANA","SPAIN","CUBA","KENYA","NORWAY","VIETNAM","IRAN","AUSTRIA"]},
+      {label:"Sport",   icon:"⚽", words:["TENNIS","RUGBY","BOXING","CRICKET","HOCKEY","SKIING","GOLF","ROWING","JUDO","DIVING","FENCING","POLO","ARCHERY","LUGE","CURLING"]}
+    ]
+  },
+  {
+    cats: [
+      {label:"Planet",  icon:"🪐", words:["MARS","VENUS","SATURN","EARTH","URANUS","NEPTUNE","MERCURY","JUPITER"]},
+      {label:"Color",   icon:"🎨", words:["CRIMSON","INDIGO","AMBER","TEAL","SCARLET","VIOLET","CORAL","OCHRE","CYAN","SIENNA"]}
+    ]
+  },
+  {
+    cats: [
+      {label:"Fruit",   icon:"🍎", words:["PAPAYA","LYCHEE","GUAVA","MANGO","KIWI","FIG","PLUM","QUINCE","PEACH","LIME","LEMON","CHERRY","GRAPE","APRICOT","MELON"]},
+      {label:"Vehicle", icon:"🚗", words:["CANOE","GLIDER","FERRY","TRAM","BLIMP","KAYAK","JEEP","SCOOTER","YACHT","BUGGY","GONDOLA","RICKSHAW","ZEPPELIN","MONORAIL","HOVERCRAFT"]}
+    ]
+  },
+  {
+    cats: [
+      {label:"Instrument", icon:"🎸", words:["SITAR","BANJO","CELLO","OBOE","HARP","TUBA","LUTE","VIOLA","KAZOO","GONG","DULCIMER","BASSOON","ZITHER","FLUGELHORN","MBIRA"]},
+      {label:"Element",    icon:"⚗️",  words:["NEON","GOLD","IRON","ARGON","XENON","BORON","ZINC","RADON","COBALT","BARIUM","HELIUM","SULFUR","CARBON","LITHIUM","CESIUM"]}
+    ]
+  },
+  {
+    cats: [
+      {label:"City",       icon:"🏙️", words:["OSLO","LIMA","DUBAI","KYOTO","NAIROBI","BRUGES","REYKJAVIK","CARACAS","LAHORE","MINSK","PORTO","IZMIR","TBILISI","ASMARA","BERN"]},
+      {label:"Profession", icon:"💼", words:["CHEF","PILOT","NURSE","WELDER","RABBI","NOTARY","ACTUARY","CURATOR","DRAPER","FARRIER","COBBLER","LUTHIER","DOCENT","BAILIFF","COOPER"]}
+    ]
+  },
+  {
+    cats: [
+      {label:"Ocean",  icon:"🌊", words:["PACIFIC","ATLANTIC","INDIAN","ARCTIC","SOUTHERN"]},
+      {label:"Desert", icon:"🏜️", words:["SAHARA","GOBI","SONORAN","KALAHARI","ATACAMA","NAMIB","ARABIAN","PATAGONIAN","SYRIAN","THAR"]},
+      {label:"Mountain",icon:"⛰️",words:["ALPS","ANDES","ROCKIES","HIMALAYAS","URALS","CAUCASUS","APPALACHIANS","ATLAS","PYRENEES","ZAGROS"]},
+      {label:"River",  icon:"💧", words:["NILE","AMAZON","YANGTZE","MISSISSIPPI","VOLGA","DANUBE","GANGES","MEKONG","CONGO","THAMES"]}
+    ]
+  }
+];
+
+const DIFF = {
+  easy:   { time: 60, buckets: 2, label: 'Easy',   tagClass: 'easy'   },
+  medium: { time: 45, buckets: 2, label: 'Medium',  tagClass: 'medium' },
+  hard:   { time: 30, buckets: 4, label: 'Hard',    tagClass: 'hard'   }
+};
+
+let mode = 'classic', diff = 'easy';
+let timeLeft, timerInterval, words, wordIdx, curStreak, bestStreak, sorted, correct, history;
+let activeRound, activeCats;
+let touchClone, touchOffX, touchOffY;
+
+function todayKey() {
+  const d = new Date();
+  return `blitzsort_daily_${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`;
+}
+
+function getDailyResult() {
+  try { return JSON.parse(localStorage.getItem(todayKey())); } catch { return null; }
+}
+
+function saveDailyResult(data) {
+  try { localStorage.setItem(todayKey(), JSON.stringify(data)); } catch {}
+}
+
+function getDailyRound() {
+  const d = new Date();
+  const seed = d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
+  return ROUNDS[seed % ROUNDS.length];
+}
+
+function dailyDateStr() {
+  return new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+}
+
+function seededShuffle(arr, seed) {
+  let a = arr.slice();
+  let s = seed;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    const j = Math.abs(s) % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function shuffle(arr) { return arr.slice().sort(() => Math.random() - 0.5); }
+
+document.getElementById('daily-nav-badge').textContent = dailyDateStr();
+
+function selectMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('mode-' + m).classList.add('selected');
+  const diffSection = document.getElementById('diff-section');
+  const dailyMsg = document.getElementById('daily-played-msg');
+  const playBtn = document.getElementById('play-btn');
+  if (m === 'daily') {
+    diffSection.style.display = 'none';
+    const dr = getDailyResult();
+    if (dr) {
+      dailyMsg.style.display = 'block';
+      playBtn.disabled = true;
+      playBtn.style.opacity = '0.4';
+    } else {
+      dailyMsg.style.display = 'none';
+      playBtn.disabled = false;
+      playBtn.style.opacity = '1';
+    }
+  } else {
+    diffSection.style.display = 'block';
+    dailyMsg.style.display = 'none';
+    playBtn.disabled = false;
+    playBtn.style.opacity = '1';
+  }
+}
+
+function selectDiff(d) {
+  diff = d;
+  document.querySelectorAll('.diff-pill').forEach(p => p.classList.remove('selected'));
+  document.getElementById('diff-' + d).classList.add('selected');
+}
+
+function startGame() {
+  const cfg = mode === 'daily' ? { time: 60, buckets: 2 } : DIFF[diff];
+  if (mode === 'daily') {
+    activeRound = getDailyRound();
+  } else {
+    const roundsForDiff = diff === 'hard' ? ROUNDS.filter(r => r.cats.length >= 4) : ROUNDS.filter(r => r.cats.length === 2);
+    activeRound = roundsForDiff.length ? roundsForDiff[Math.floor(Math.random() * roundsForDiff.length)] : ROUNDS[Math.floor(Math.random() * ROUNDS.length)];
+  }
+
+  const numBuckets = Math.min(cfg.buckets, activeRound.cats.length);
+  activeCats = activeRound.cats.slice(0, numBuckets);
+
+  const allWords = activeCats.flatMap(c => c.words);
+  if (mode === 'daily') {
+    const d = new Date();
+    const seed = d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
+    words = seededShuffle(allWords, seed);
+  } else {
+    words = shuffle(allWords);
+  }
+
+  wordIdx = 0; curStreak = 0; bestStreak = 0; sorted = 0; correct = 0; history = [];
+  timeLeft = cfg.time;
+
+  const tag = document.getElementById('diff-tag');
+  if (mode === 'daily') {
+    tag.textContent = 'Daily'; tag.className = 'diff-tag daily';
+  } else {
+    tag.textContent = DIFF[diff].label; tag.className = 'diff-tag ' + diff;
+  }
+
+  document.getElementById('round-label').textContent = activeCats.map(c => c.label).join(' · ');
+  showScreen('game-screen');
+  renderBuckets();
+  loadWord();
+  clearInterval(timerInterval);
+  timerInterval = setInterval(tick, 100);
+}
+
+function tick() {
+  timeLeft = Math.max(0, timeLeft - 0.1);
+  document.getElementById('timer-disp').textContent = Math.ceil(timeLeft);
+  const pct = (timeLeft / (mode === 'daily' ? 60 : DIFF[diff].time)) * 100;
+  const bar = document.getElementById('timer-bar');
+  bar.style.width = pct + '%';
+  bar.style.background = pct > 50 ? '#7c6fff' : pct > 25 ? '#f6a623' : '#f56565';
+  if (timeLeft <= 0) { clearInterval(timerInterval); showResult(); }
+}
+
+function renderBuckets() {
+  const b = document.getElementById('buckets');
+  b.innerHTML = '';
+  b.className = 'buckets ' + (activeCats.length <= 2 ? 'two-col' : 'four-col');
+  activeCats.forEach(cat => {
+    const d = document.createElement('div');
+    d.className = 'bucket';
+    d.dataset.cat = cat.label;
+    d.innerHTML = `<div class="bucket-icon">${cat.icon}</div><div class="bucket-label">${cat.label}</div><div class="bucket-count" id="bc-${cat.label}">0 sorted</div>`;
+    d.addEventListener('dragover', e => { e.preventDefault(); d.classList.add('drag-over'); });
+    d.addEventListener('dragleave', () => d.classList.remove('drag-over'));
+    d.addEventListener('drop', e => { e.preventDefault(); d.classList.remove('drag-over'); handleSort(cat.label); });
+    b.appendChild(d);
+  });
+}
+
+function loadWord() {
+  if (wordIdx >= words.length) {
+    const allWords = activeCats.flatMap(c => c.words);
+    words = shuffle(allWords); wordIdx = 0;
+  }
+  const chip = document.getElementById('word-chip');
+  chip.textContent = words[wordIdx];
+  chip.className = 'word-chip';
+  chip.draggable = true;
+  chip.ondragstart = e => { e.dataTransfer.setData('text', 'word'); };
+  chip.ontouchstart = startTouch;
+  chip.ontouchmove = moveTouch;
+  chip.ontouchend = endTouch;
+}
+
+function startTouch(e) {
+  const chip = document.getElementById('word-chip');
+  const r = chip.getBoundingClientRect();
+  const t = e.touches[0];
+  touchOffX = t.clientX - r.left; touchOffY = t.clientY - r.top;
+  touchClone = chip.cloneNode(true);
+  touchClone.classList.add('touch-clone');
+  touchClone.style.left = r.left + 'px';
+  touchClone.style.top = r.top + 'px';
+  touchClone.style.width = r.width + 'px';
+  document.body.appendChild(touchClone);
+  chip.style.opacity = '0.25';
+}
+function moveTouch(e) {
+  e.preventDefault();
+  const t = e.touches[0];
+  if (touchClone) { touchClone.style.left = (t.clientX - touchOffX) + 'px'; touchClone.style.top = (t.clientY - touchOffY) + 'px'; }
+}
+function endTouch(e) {
+  if (touchClone) { touchClone.remove(); touchClone = null; }
+  document.getElementById('word-chip').style.opacity = '1';
+  const t = e.changedTouches[0];
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  const bucket = el && (el.classList.contains('bucket') ? el : el.closest('.bucket'));
+  if (bucket) handleSort(bucket.dataset.cat);
+}
+
+function handleSort(chosen) {
+  const word = words[wordIdx];
+  const correctCat = activeCats.find(c => c.words.includes(word));
+  const isCorrect = correctCat && correctCat.label === chosen;
+  const chip = document.getElementById('word-chip');
+  sorted++;
+  history.push(isCorrect ? 1 : 0);
+  if (isCorrect) {
+    correct++; curStreak++;
+    if (curStreak > bestStreak) bestStreak = curStreak;
+    chip.classList.add('flash-correct');
+  } else {
+    curStreak = 0;
+    chip.classList.add('flash-wrong');
+  }
+  document.getElementById('best-streak').textContent = bestStreak;
+  document.getElementById('cur-streak').textContent = curStreak;
+  document.getElementById('sorted-count').textContent = sorted;
+  const bc = document.getElementById('bc-' + chosen);
+  if (bc) { const n = parseInt(bc.textContent) || 0; bc.textContent = (n + 1) + ' sorted'; }
+  wordIdx++;
+  setTimeout(loadWord, 160);
+}
+
+function showResult() {
+  showScreen('result-screen');
+  const acc = sorted > 0 ? Math.round((correct / sorted) * 100) : 0;
+  document.getElementById('final-streak').textContent = bestStreak;
+  document.getElementById('r-sorted').textContent = sorted;
+  document.getElementById('r-correct').textContent = correct;
+  document.getElementById('r-acc').textContent = acc + '%';
+  const modeLabel = mode === 'daily' ? 'Daily · ' + dailyDateStr() : 'Classic · ' + DIFF[diff].label;
+  document.getElementById('result-mode-label').textContent = modeLabel;
+
+  const dots = document.getElementById('streak-dots');
+  dots.innerHTML = '';
+  history.slice(0, 28).forEach(h => {
+    const d = document.createElement('div');
+    d.className = 'dot ' + (h ? 'ok' : 'bad');
+    dots.appendChild(d);
+  });
+
+  if (mode === 'daily') {
+    saveDailyResult({ streak: bestStreak, sorted, correct, acc, date: new Date().toDateString() });
+  }
+}
+
+function buildShareText() {
+  const acc = sorted > 0 ? Math.round((correct / sorted) * 100) : 0;
+  const emojiDots = history.slice(0, 20).map(h => h ? '🟩' : '🟥').join('');
+  const modeStr = mode === 'daily' ? `Daily (${dailyDateStr()})` : `Classic · ${DIFF[diff].label}`;
+  return `Blitz Sort — ${modeStr}\n\nBest streak: ${bestStreak}\nSorted: ${sorted} | Accuracy: ${acc}%\n\n${emojiDots}\n\nPlay free → blitzsort.io`;
+}
+
+function shareOnX() {
+  window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(buildShareText()), '_blank');
+}
+
+function copyResult() {
+  navigator.clipboard.writeText(buildShareText()).then(() => {
+    const t = document.getElementById('copied-toast');
+    t.textContent = 'Copied to clipboard!';
+    setTimeout(() => t.textContent = '', 2000);
+  });
+}
+
+function backToStart() {
+  showScreen('start-screen');
+  selectMode(mode);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+</script>
+</body>
+</html>
