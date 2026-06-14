@@ -403,13 +403,14 @@
   footer a { color: var(--text-2); text-decoration: none; transition: color 0.15s; }
   footer a:hover { color: var(--accent); }
 
-  /* TOUCH CLONE */
-  .touch-clone {
+  /* DRAG CLONE */
+  .drag-clone {
     position: fixed;
     pointer-events: none;
-    opacity: 0.88;
-    z-index: 999;
-    transform: scale(1.06) rotate(-1deg);
+    opacity: 0.92;
+    z-index: 9999;
+    transform: scale(1.08) rotate(-2deg);
+    transition: none !important;
   }
 
   @media (max-width: 400px) {
@@ -573,7 +574,6 @@ const DIFF = {
 let mode = 'classic', diff = 'easy';
 let timeLeft, timerInterval, words, wordIdx, curStreak, bestStreak, sorted, correct, history;
 let activeRound, activeCats;
-let touchClone, touchOffX, touchOffY;
 
 function todayKey() {
   const d = new Date();
@@ -704,12 +704,11 @@ function renderBuckets() {
     d.className = 'bucket';
     d.dataset.cat = cat.label;
     d.innerHTML = `<div class="bucket-icon">${cat.icon}</div><div class="bucket-label">${cat.label}</div><div class="bucket-count" id="bc-${cat.label}">0 sorted</div>`;
-    d.addEventListener('dragover', e => { e.preventDefault(); d.classList.add('drag-over'); });
-    d.addEventListener('dragleave', () => d.classList.remove('drag-over'));
-    d.addEventListener('drop', e => { e.preventDefault(); d.classList.remove('drag-over'); handleSort(cat.label); });
     b.appendChild(d);
   });
 }
+
+let dragClone = null, dragOffX = 0, dragOffY = 0, isDragging = false, lastX = 0, lastY = 0;
 
 function loadWord() {
   if (wordIdx >= words.length) {
@@ -719,38 +718,65 @@ function loadWord() {
   const chip = document.getElementById('word-chip');
   chip.textContent = words[wordIdx];
   chip.className = 'word-chip';
-  chip.draggable = true;
-  chip.ondragstart = e => { e.dataTransfer.setData('text', 'word'); };
-  chip.ontouchstart = startTouch;
-  chip.ontouchmove = moveTouch;
-  chip.ontouchend = endTouch;
+  chip.style.opacity = '1';
+  chip.style.cursor = 'grab';
+  chip.draggable = false;
+  chip.onpointerdown = onDragStart;
 }
 
-function startTouch(e) {
+function onDragStart(e) {
+  if (isDragging) return;
+  isDragging = true;
   const chip = document.getElementById('word-chip');
+  chip.setPointerCapture(e.pointerId);
   const r = chip.getBoundingClientRect();
-  const t = e.touches[0];
-  touchOffX = t.clientX - r.left; touchOffY = t.clientY - r.top;
-  touchClone = chip.cloneNode(true);
-  touchClone.classList.add('touch-clone');
-  touchClone.style.left = r.left + 'px';
-  touchClone.style.top = r.top + 'px';
-  touchClone.style.width = r.width + 'px';
-  document.body.appendChild(touchClone);
-  chip.style.opacity = '0.25';
+  dragOffX = e.clientX - r.left;
+  dragOffY = e.clientY - r.top;
+  lastX = e.clientX; lastY = e.clientY;
+
+  dragClone = chip.cloneNode(true);
+  dragClone.className = 'word-chip drag-clone';
+  dragClone.style.width = r.width + 'px';
+  dragClone.style.left = (e.clientX - dragOffX) + 'px';
+  dragClone.style.top  = (e.clientY - dragOffY) + 'px';
+  document.body.appendChild(dragClone);
+  chip.style.opacity = '0.22';
+  chip.style.cursor = 'grabbing';
+
+  chip.onpointermove = onDragMove;
+  chip.onpointerup   = onDragEnd;
+  chip.onpointercancel = onDragEnd;
 }
-function moveTouch(e) {
-  e.preventDefault();
-  const t = e.touches[0];
-  if (touchClone) { touchClone.style.left = (t.clientX - touchOffX) + 'px'; touchClone.style.top = (t.clientY - touchOffY) + 'px'; }
+
+function onDragMove(e) {
+  if (!isDragging || !dragClone) return;
+  lastX = e.clientX; lastY = e.clientY;
+  dragClone.style.left = (e.clientX - dragOffX) + 'px';
+  dragClone.style.top  = (e.clientY - dragOffY) + 'px';
+  document.querySelectorAll('.bucket').forEach(b => {
+    const r = b.getBoundingClientRect();
+    const over = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    b.classList.toggle('drag-over', over);
+  });
 }
-function endTouch(e) {
-  if (touchClone) { touchClone.remove(); touchClone = null; }
-  document.getElementById('word-chip').style.opacity = '1';
-  const t = e.changedTouches[0];
-  const el = document.elementFromPoint(t.clientX, t.clientY);
-  const bucket = el && (el.classList.contains('bucket') ? el : el.closest('.bucket'));
-  if (bucket) handleSort(bucket.dataset.cat);
+
+function onDragEnd(e) {
+  if (!isDragging) return;
+  isDragging = false;
+  const chip = document.getElementById('word-chip');
+  chip.onpointermove = null; chip.onpointerup = null; chip.onpointercancel = null;
+  if (dragClone) { dragClone.remove(); dragClone = null; }
+  chip.style.opacity = '1';
+  chip.style.cursor = 'grab';
+  document.querySelectorAll('.bucket').forEach(b => b.classList.remove('drag-over'));
+
+  const cx = lastX, cy = lastY;
+  let dropped = null;
+  document.querySelectorAll('.bucket').forEach(b => {
+    const r = b.getBoundingClientRect();
+    if (cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) dropped = b;
+  });
+  if (dropped) handleSort(dropped.dataset.cat);
 }
 
 function handleSort(chosen) {
