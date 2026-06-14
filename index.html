@@ -804,7 +804,7 @@ function buildShareText() {
   const acc = sorted > 0 ? Math.round((correct / sorted) * 100) : 0;
   const emojiDots = history.slice(0, 20).map(h => h ? '🟩' : '🟥').join('');
   const modeStr = mode === 'daily' ? `Daily (${dailyDateStr()})` : `Classic · ${DIFF[diff].label}`;
-  return `Blitz Sort — ${modeStr}\n\nBest streak: ${bestStreak}\nSorted: ${sorted} | Accuracy: ${acc}%\n\n${emojiDots}\n\nPlay free → blitzsort.io`;
+  return `Blitz Sort — ${modeStr}\n\nBest streak: ${bestStreak}\nSorted: ${sorted} | Accuracy: ${acc}%\n\n${emojiDots}\n\nPlay free → shubhamlashkan.github.io/BlitzSort/`;
 }
 
 function shareOnX() {
